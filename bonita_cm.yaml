@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bonita-test
+data:
+  BDM_DS_CONNECTION_POOL_INITIAL_SIZE: "1"
+  BDM_DS_CONNECTION_POOL_MAX_IDLE: "10"
+  BDM_DS_CONNECTION_POOL_MAX_TOTAL: "20"
+  BDM_DS_CONNECTION_POOL_MIN_IDLE: "1"
+  BIZ_DB_NAME: bizdata
+  BIZ_DB_USER: bizuser
+  BONITA_DS_CONNECTION_POOL_INITIAL_SIZE: "2"
+  BONITA_DS_CONNECTION_POOL_MAX_IDLE: "20"
+  BONITA_DS_CONNECTION_POOL_MAX_TOTAL: "50"
+  BONITA_DS_CONNECTION_POOL_MIN_IDLE: "2"
+  BONITA_PLATFORM_PERSISTENCE_USE_SECOND_LEVEL_CACHE: "false"
+  # 1 hour in seconds
+  BONITA_RUNTIME_CLUSTER_HTTP_SESSION_TIMEOUT: "3600"
+  # 1 hour in milliseconds
+  BONITA_RUNTIME_SESSION_DURATION: "3600000"
+  BONITA_SERVER_LOGGING_FILE: /opt/custom-init.d/log4j2-appenders.xml,/opt/bonita/conf/logs/log4j2-loggers.xml
+  CLUSTER_MODE: "true"
+  DB_HOST: postgres-db
+  DB_NAME: bonita
+  DB_PORT: "5432"
+  DB_USER: bonitauser
+  DB_VENDOR: postgres
+  HTTP_API: "false"
+  HTTP_MAX_THREADS: "20"
+  JAVA_OPTS: -Djava.awt.headless=true -XX:+UseContainerSupport -XX:InitialRAMPercentage=60
+    -XX:MaxRAMPercentage=60 -XX:MinRAMPercentage=60 -XX:+HeapDumpOnOutOfMemoryError
+    -XX:+UseG1GC -Dbonita.client.home=/opt/bonita_lic
+  KUBERNETES_NAME: bonita-test
+  KUBERNETES_NAMESPACE: bonita
+  REMOTE_IP_VALVE_ENABLED: "true"
+  TZ: Europe/Paris
