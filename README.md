@@ -62,10 +62,10 @@ postgres=# \list
 
 Add Docker registry credentials
 ```
-DOCKER_SEVER=bonitasoft.jfrog.io
+DOCKER_SERVER=bonitasoft.jfrog.io
 DOCKER_USERNAME=...
 DOCKER_TOKEN=...
-kubectl create secret docker-registry imagepullsecret --docker-server="${DOCKER_SEVER}" --docker-username="${DOCKER_USERNAME}" --docker-password="${DOCKER_TOKEN}" -n bonita
+kubectl create secret docker-registry imagepullsecret --docker-server="${DOCKER_SERVER}" --docker-username="${DOCKER_USERNAME}" --docker-password="${DOCKER_TOKEN}" -n bonita
 ```
 
 Request a Bonita license compatible with Kubernetes into the [Customer service center](https://csc.bonitacloud.bonitasoft.com/apps/CustomerServices)
