@@ -1,0 +1,126 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "bonita.fullname" . }}-env-vars
+  labels:
+    {{- include "bonita.labels" . | nindent 4 }}
+  namespace: {{ .Release.Namespace | quote }}
+data:
+{{- if .Values.timezone }}
+  TZ: "{{ .Values.timezone }}"
+{{- end }}
+{{- if .Values.httpApi.enabled }}
+  HTTP_API: "true"
+{{- end }}
+{{- if .Values.clusterMode }}
+  CLUSTER_MODE: {{ .Values.clusterMode | quote }}
+{{- end }}
+{{- if .Values.datasources.bonita.vendor }}
+  DB_VENDOR: {{ include "bonita.tplvalues" (dict "value" .Values.datasources.bonita.vendor "context" $) | quote }}
+{{- end }}
+{{- if .Values.datasources.bonita.host }}
+  DB_HOST: {{ include "bonita.tplvalues" (dict "value" .Values.datasources.bonita.host "context" $) | quote }}
+{{- end }}
+{{- if .Values.datasources.bonita.port }}
+  DB_PORT: {{ include "bonita.tplvalues" (dict "value" .Values.datasources.bonita.port "context" $) | quote }}
+{{- end }}
+{{- if .Values.datasources.bonita.username }}
+  DB_USER: {{ include "bonita.tplvalues" (dict "value" .Values.datasources.bonita.username "context" $) | quote }}
+{{- end }}
+{{- if .Values.datasources.bonita.name }}
+  DB_NAME: {{ include "bonita.tplvalues" (dict "value" .Values.datasources.bonita.name "context" $) | quote }}
+{{- end }}
+{{- if .Values.datasources.bdm.username }}
+  BIZ_DB_USER: {{ include "bonita.tplvalues" (dict "value" .Values.datasources.bdm.username "context" $) | quote }}
+{{- end }}
+{{- if .Values.datasources.bdm.name }}
+  BIZ_DB_NAME: {{ include "bonita.tplvalues" (dict "value" .Values.datasources.bdm.name "context" $) | quote }}
+{{- end }}
+{{- if .Values.maxthreads_8080 }}
+  HTTP_MAX_THREADS: {{ include "bonita.tplvalues" (dict "value" .Values.maxthreads_8080 "context" $) | quote }}
+{{- end }}
+  JAVA_OPTS: >-
+    -Djava.awt.headless=true
+    -XX:+UseContainerSupport -XX:InitialRAMPercentage=60 -XX:MaxRAMPercentage=60 -XX:MinRAMPercentage=60
+    -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/opt/bonita_run/${HOSTNAME}-`date +'%Y%m%d_%H%M%S'`.hprof
+    -XX:+UseG1GC -XX:+UseStringDeduplication -XX:MaxGCPauseMillis=500 
+    -XX:InitiatingHeapOccupancyPercent=45 
+    -XX:+PrintCommandLineFlags -XX:+PrintGCDetails 
+    -Xlog:gc*=info:stdout:time,uptime,level,tags
+    -Dbonita.client.home=/opt/bonita_lic
+    -Dbonita.csrf.cookie.path=/
+    {{ .Values.javaopts_extra }}
+{{- if .Values.datasources.bonita.initialsize }}
+  BONITA_DS_CONNECTION_POOL_INITIAL_SIZE: {{ include "bonita.tplvalues" (dict "value" .Values.datasources.bonita.initialsize "context" $) | quote }}
+{{- end }}
+{{- if .Values.datasources.bonita.maxtotal }}
+  BONITA_DS_CONNECTION_POOL_MAX_TOTAL: {{ include "bonita.tplvalues" (dict "value" .Values.datasources.bonita.maxtotal "context" $) | quote }}
+{{- end }}
+{{- if .Values.datasources.bonita.minidle }}
+  BONITA_DS_CONNECTION_POOL_MIN_IDLE: {{ include "bonita.tplvalues" (dict "value" .Values.datasources.bonita.minidle "context" $) | quote }}
+{{- end }}
+{{- if .Values.datasources.bonita.maxidle }}
+  BONITA_DS_CONNECTION_POOL_MAX_IDLE: {{ include "bonita.tplvalues" (dict "value" .Values.datasources.bonita.maxidle "context" $) | quote }}
+{{- end }}
+{{- if .Values.datasources.bdm.initialsize }}
+  BDM_DS_CONNECTION_POOL_INITIAL_SIZE: {{ include "bonita.tplvalues" (dict "value" .Values.datasources.bdm.initialsize "context" $) | quote }}
+{{- end }}
+{{- if .Values.datasources.bdm.maxtotal }}
+  BDM_DS_CONNECTION_POOL_MAX_TOTAL: {{ include "bonita.tplvalues" (dict "value" .Values.datasources.bdm.maxtotal "context" $) | quote }}
+{{- end }}
+{{- if .Values.datasources.bdm.minidle }}
+  BDM_DS_CONNECTION_POOL_MIN_IDLE: {{ include "bonita.tplvalues" (dict "value" .Values.datasources.bdm.minidle "context" $) | quote }}
+{{- end }}
+{{- if .Values.datasources.bdm.maxidle }}
+  BDM_DS_CONNECTION_POOL_MAX_IDLE: {{ include "bonita.tplvalues" (dict "value" .Values.datasources.bdm.maxidle "context" $) | quote }}
+{{- end }}
+{{- if .Values.progradePolicy }}
+  PRO_GRADE: "true"
+{{- end }}
+{{- if .Values.accesslogs.stdoutEnabled }}
+  ACCESSLOGS_STDOUT_ENABLED: "true"
+{{- end }}
+{{- if .Values.accesslogs.filesEnabled }}
+  ACCESSLOGS_FILES_ENABLED: "true"
+{{- end }}
+{{- if .Values.accesslogs.filesPath }}
+  ACCESSLOGS_PATH: {{ include "bonita.tplvalues" (dict "value" .Values.accesslogs.filesPath "context" $) | quote }}
+{{- end }}
+{{- if .Values.accesslogs.filesAppendHostname }}
+  ACCESSLOGS_PATH_APPEND_HOSTNAME: "true"
+{{- end }}
+{{- if .Values.accesslogs.filesMaxDays }}
+  ACCESSLOGS_MAX_DAYS: {{ include "bonita.tplvalues" (dict "value" .Values.accesslogs.filesMaxDays "context" $) | quote }}
+{{- end }}
+{{- if .Values.remoteIpEnabled }}
+  REMOTE_IP_VALVE_ENABLED: "true"
+{{- end }}
+{{- if .Values.usagemetrics.enabled }}
+  BONITA_RUNTIME_USAGEMETRICS_ENABLED: "true"
+{{- end }}
+{{- if .Values.usagemetrics.subscriptionId }}
+  BONITA_RUNTIME_USAGEMETRICS_ENVIRONMENT_SUBSCRIPTION_ID: {{ include "bonita.tplvalues" (dict "value" .Values.usagemetrics.subscriptionId "context" $) | quote }}
+{{- end }}
+{{- if .Values.usagemetrics.runtimeId }}
+  BONITA_RUNTIME_USAGEMETRICS_ENVIRONMENT_RUNTIME_ID: {{ include "bonita.tplvalues" (dict "value" .Values.usagemetrics.runtimeId "context" $) | quote }}
+{{- end }}
+{{- if .Values.usagemetrics.accountName }}
+  BONITA_RUNTIME_USAGEMETRICS_ENVIRONMENT_ACCOUNT_NAME: {{ include "bonita.tplvalues" (dict "value" .Values.usagemetrics.accountName "context" $) | quote }}
+{{- end }}
+{{- if .Values.usagemetrics.connectionUrl }}
+  BONITA_RUNTIME_USAGEMETRICS_CONNECTION_URL: {{ include "bonita.tplvalues" (dict "value" .Values.usagemetrics.connectionUrl "context" $) | quote }}
+{{- end }}
+{{- if .Values.usagemetrics.connectionTimeout }}
+  BONITA_RUNTIME_USAGEMETRICS_CONNECTION_TIMEOUT: {{ include "bonita.tplvalues" (dict "value" .Values.usagemetrics.connectionTimeout "context" $) | quote }}
+{{- end }}
+{{- if .Values.transactionXATimeout }}
+  BONITA_RUNTIME_TRANSACTION_XATIMEOUT: {{ include "bonita.tplvalues" (dict "value" .Values.transactionXATimeout "context" $) | quote }}
+{{- end }}
+{{- if .Values.heapDumpPath }}
+  HEAPDUMP_PATH: {{ include "bonita.tplvalues" (dict "value" .Values.heapDumpPath "context" $) | quote }}
+{{- end }}
+{{- if .Values.session.duration }}
+  BONITA_RUNTIME_SESSION_DURATION: "{{ include "bonita.tplvalues" (dict "value" .Values.session.duration "context" $) }}000"
+  BONITA_RUNTIME_CLUSTER_HTTP_SESSION_TIMEOUT: {{ include "bonita.tplvalues" (dict "value" .Values.session.duration "context" $) | quote }}
+{{- end }}
+  BONITA_PLATFORM_PERSISTENCE_USE_SECOND_LEVEL_CACHE: {{ include "bonita.tplvalues" (dict "value" .Values.use_second_level_cache "context" $) | quote }}

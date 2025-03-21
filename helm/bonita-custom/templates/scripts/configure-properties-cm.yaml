@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "bonita-custom.fullname" . }}-configure-properties
+  labels:
+    {{- include "bonita-custom.labels" . | nindent 4 }}
+  namespace: {{ .Release.Namespace | quote }}
+  annotations:
+    # This is what defines this resource as a hook. Without this line, the
+    # job is considered part of the release.
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-2"
+    "helm.sh/hook-delete-policy": before-hook-creation
+data:
+  bonita-platform-sp-cluster-custom.properties: |
+    bonita.cluster.group.name=%%KUBERNETES_NAME%%
+
+    bonita.platform.cluster.hazelcast.multicast.enabled=false
+    bonita.platform.cluster.hazelcast.tcpip.enabled=false
+    bonita.platform.cluster.hazelcast.aws.enabled=false
+    bonita.platform.cluster.hazelcast.kubernetes.enabled=true
+
+    bonita.platform.cluster.hazelcast.kubernetes.namespace=%%KUBERNETES_NAMESPACE%%
+    bonita.platform.cluster.hazelcast.kubernetes.serviceName=%%KUBERNETES_NAME%%
+    bonita.platform.cluster.hazelcast.kubernetes.resolveNotReadyAddresses=false
+    bonita.platform.cluster.hazelcast.diagnostics.enabled=false
+    bonita.platform.cluster.hazelcast.diagnostics.metric.level=info
+    bonita.platform.cluster.hazelcast.partitionGroup.enabled=true
+    bonita.platform.cluster.hazelcast.partitionGroup.groupType=ZONE_AWARE
+
+    ## Monitor locks on cluster
+    org.bonitasoft.engine.monitoring.metrics.cluster.locks.enable=true
+  k8s-support.sh: |-
+    #!/bin/sh
+
+    set -euxo pipefail
+
+    BONITA_DIR="/opt/bonita"
+
+    /opt/files/config.sh
+
+    ## Use setup tool to configure Bonita Tomcat bundle
+
+    cd ${BONITA_DIR}/setup
+    ./setup.sh pull
+
+    # configure cluster
+    if [[ "${CLUSTER_MODE}" == "true" ]]; then
+    sed -e 's/%%KUBERNETES_NAME%%/'"${KUBERNETES_NAME}"'/g' \
+        -e 's/%%KUBERNETES_NAMESPACE%%/'"${KUBERNETES_NAMESPACE}"'/g' \
+        /opt/init.d/bonita-platform-sp-cluster-custom.properties \
+        > ${BONITA_DIR}/setup/platform_conf/current/platform_engine/bonita-platform-sp-cluster-custom.properties
+    fi
+
+    cd ${BONITA_DIR}/setup
+    ./setup.sh push

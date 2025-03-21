@@ -1,0 +1,134 @@
+{{- if .Values.uib.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "bonita.fullname" . }}-ui-builder
+  labels:
+    {{- include "bonita.labels" . | nindent 4 }}
+    app: uib
+  namespace: {{ .Release.Namespace | quote }}
+  {{- if .Values.uib.builder.deploymentAnnotations }}
+  annotations:
+    {{- include "bonita.tplvalues" (dict "value" .Values.uib.builder.deploymentAnnotations "context" $) | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if not .Values.uib.builder.autoscaling.enabled }}
+  replicas: {{ .Values.uib.builder.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "bonita.selectorLabels" . | nindent 6 }}
+      app: uib
+  template:
+    metadata:
+      {{- if .Values.uib.builder.podAnnotations }}
+      annotations:
+        {{- include "bonita.tplvalues" (dict "value" .Values.uib.builder.podAnnotations "context" $) | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "bonita.selectorLabels" . | nindent 8 }}
+        app: uib
+    spec:
+      {{- if .Values.uib.builder.image.pullSecrets }}
+      imagePullSecrets:
+        {{- include "bonita.tplvalues" (dict "value" .Values.uib.builder.image.pullSecrets "context" $) | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "bonita.serviceAccountName" . }}
+      {{- if .Values.uib.builder.podSecurityContext }}
+      securityContext:
+        {{- include "bonita.tplvalues" (dict "value" .Values.uib.builder.podSecurityContext "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.uib.builder.podInitContainers }}
+      initContainers:
+        {{- include "bonita.tplvalues" (dict "value" .Values.uib.builder.podInitContainers "context" $) | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}-ui-builder
+          securityContext:
+            {{- toYaml .Values.uib.builder.containerSecurityContext | nindent 12 }}
+          image: "{{ .Values.uib.builder.image.repository }}:{{ .Values.uib.builder.image.tag }}"
+          imagePullPolicy: {{ .Values.uib.builder.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          startupProbe:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - /opt/appsmith/healthcheck.sh
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            failureThreshold: 20
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - /opt/appsmith/healthcheck.sh
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 10
+          {{- if .Values.uib.builder.resources }}
+          resources:
+            {{- toYaml .Values.uib.builder.resources | nindent 12 }}
+          {{- end }}
+          env:
+          - name: BONITA_API_URL
+            value: {{ printf "http://%s-engine:%d/bonita/API" (include "bonita.fullname" .) (.Values.services.bonita.port | int ) | quote }}
+          - name: BONITA_HEALTHCHECK_USER
+            value: {{ .Values.credentials.monitoring.username  }}
+          - name: BONITA_HEALTHCHECK_PASSWORD
+            value: {{ .Values.credentials.monitoring.password }}
+          - name: BONITA_DEV_MODE
+            value: {{ ternary "true" "false" .Values.uib.builder.devMode | quote }}
+          - name: LOGGING_LEVEL_ROOT
+            value: "info"
+          - name: LOGGING_LEVEL_COM_APPSMITH
+            value: "info"
+          - name: LOGGING_LEVEL_COM_BONITASOFT
+            value: "info"
+          - name: LOGGING_LEVEL_COM_EXTERNAL_PLUGINS
+            value: "info"
+          - name: LOGGING_PATTERN_CONSOLE
+            value: "%msg"
+          {{- if or .Values.uib.builder.externalConfigMapName
+                    .Values.uib.builder.podVolumeMounts
+              }}
+          volumeMounts:
+          {{- if .Values.uib.builder.podVolumeMounts }}
+            {{- include "bonita.tplvalues" (dict "value" .Values.uib.builder.podVolumeMounts "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.uib.builder.externalConfigMapName }}
+            - name: appsmith-apps
+              mountPath: /opt/appsmith/workspace/applications
+          {{- end }}
+          {{- end }}
+      {{- if or
+          .Values.uib.builder.podVolumes
+          .Values.uib.builder.externalConfigMapName
+        }}
+      volumes:
+        {{- if .Values.uib.builder.externalConfigMapName }}
+        - name: appsmith-apps
+          configMap:
+            name: {{ include "bonita.tplvalues" (dict "value" .Values.uib.builder.externalConfigMapName "context" $) }}
+        {{- end }}
+        {{- if .Values.uib.builder.podVolumes }}
+        {{- include "bonita.tplvalues" (dict "value" .Values.uib.builder.podVolumes "context" $) | nindent 8 }}
+        {{- end }}
+      {{- end }}
+      {{- if .Values.uib.builder.nodeSelector }}
+      nodeSelector:
+        {{- include "bonita.tplvalues" (dict "value" .Values.uib.builder.nodeSelector "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.uib.builder.affinity }}
+      affinity:
+        {{- include "bonita.tplvalues" (dict "value" .Values.uib.builder.affinity "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.uib.builder.tolerations }}
+      tolerations:
+        {{- include "bonita.tplvalues" (dict "value" .Values.uib.builder.tolerations "context" $) | nindent 8 }}
+      {{- end }}
+{{- end }}

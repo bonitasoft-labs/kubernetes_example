@@ -1,0 +1,24 @@
+{{- if and .Values.uib.enabled .Values.uib.proxy.customErrorPages.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "bonita.fullname" . }}-ui-proxy-errorpages
+  labels:
+    {{- include "bonita.labels" . | nindent 4 }}
+  namespace: {{ .Release.Namespace | quote }}
+data:
+  {{ .Values.uib.proxy.customErrorPages.errorPages  | toYaml | nindent 4 }}
+{{- end }}
+{{- if and .Values.uib.enabled .Values.uib.proxy.configFileTemplate }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "bonita.fullname" . }}-nginx-config
+  labels:
+    {{- include "bonita.labels" . | nindent 4 }}
+  namespace: {{ .Release.Namespace | quote }}
+data:
+  nginx.conf.template: |-
+    {{- .Values.uib.proxy.configFileTemplate | nindent 4 }}
+{{- end }}

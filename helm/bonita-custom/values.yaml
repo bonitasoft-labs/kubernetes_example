@@ -1,0 +1,126 @@
+nameOverride: "bonita"
+
+clusterMode: true
+
+initJobResources:
+  limits:
+    cpu: 500m
+    memory: 1800Mi
+  requests:
+    cpu: 500m
+    memory: 1600Mi
+
+work:
+  corepoolsize: "10"
+  maxpoolsize: "10"
+  queuecapacity: "2000000"
+connector:
+  corepoolsize: "10"
+  maxpoolsize: "10"
+  queuecapacity: "1000000"
+scheduler:
+  poolsize: "5"
+  batchsize: "1000"
+
+bonita:
+  nameOverride: "bonita"
+  remoteIpEnabled: true
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1800Mi
+    requests:
+      cpu: 500m
+      memory: 1600Mi
+
+  credentials:
+    tenant:
+      username: ""
+      password: ""
+    platform:
+      username: ""
+      password: ""
+    monitoring:
+      username: ""
+      password: ""
+
+  podAnnotations:
+
+  ingress:
+    enabled: false
+
+  datasources:
+    bonita:
+      name: "bonita"
+      vendor: "postgres"
+      host: ""
+      port: "5432"
+      username: ""
+      password: ""
+      # initialsize: 2
+      # maxtotal: 10
+      # minidle: 2
+      # maxidle: 10
+
+    bdm:
+      name: "bizdata"
+      vendor: "postgres"
+      host: ""
+      port: "5432"
+      username: ""
+      password: ""
+      # initialsize: 2
+      # maxtotal: 10
+      # minidle: 2
+      # maxidle: 10
+
+  maxthreads_8080: "50"
+
+  transactionXATimeout: "600"
+
+  heapDumpPath:
+
+  podVolumes:
+    - name: custom-logger
+      configMap:
+        name: '{{ include "bonita-custom.fullname" . }}-custom-logger'
+
+  podVolumeMounts:
+    - name: custom-logger
+      subPath: log4j2-appenders.xml
+      mountPath: /opt/bonita/conf/logs/log4j2-appenders.xml
+
+  podInitContainers:
+
+  progradePolicy: ""
+
+  customInitScripts:
+
+  uib:
+    builder:
+      nameOverride: "builder"
+      image:
+        pullSecrets:
+        - name: '{{ include "bonita-custom.fullname" . }}-imagepullsecret'
+      resources:
+        limits:
+          cpu: 500m
+          memory: 1Gi
+        requests:
+          cpu: 500m
+          memory: 512Mi
+
+    proxy:
+      nameOverride: "proxy"
+      image:
+        pullSecrets:
+        - name: '{{ include "bonita-custom.fullname" . }}-imagepullsecret'
+      resources:
+        limits:
+          cpu: 500m
+          memory: 256Mi
+        requests:
+          cpu: 500m
+          memory: 256Mi
+      podAnnotations:

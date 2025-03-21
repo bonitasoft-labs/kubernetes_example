@@ -1,0 +1,148 @@
+# Install Minikube
+
+```
+curl -LO https://storage.googleapis.com/minikube/releases/v1.34.0/minikube-linux-amd64
+sudo install minikube-linux-amd64 /usr/local/bin/minikube && rm minikube-linux-amd64
+```
+
+```
+minikube version
+minikube version: v1.34.0
+commit: 210b148df93a80eb872ecbeb7e35281b3c582c61
+```
+
+```
+minikube start --kubernetes-version 1.30.9
+```
+
+# Install Helm
+
+```
+curl -LO https://get.helm.sh/helm-v3.17.1-linux-amd64.tar.gz
+tar -zxvf helm-v3.17.1-linux-amd64.tar.gz
+sudo mv linux-amd64/helm /usr/local/bin/helm
+rm helm-v3.17.1-linux-amd64.tar.gz
+rm -rf linux-amd64/
+```
+
+```
+helm version
+version.BuildInfo{Version:"v3.17.1", GitCommit:"980d8ac1939e39138101364400756af2bdee1da5", GitTreeState:"clean", GoVersion:"go1.23.5"}
+```
+
+
+# Create test namespace
+
+```
+kubectl create ns bonita
+```
+
+# Deploy PostgreSQL
+
+```
+kubectl -n bonita create configmap db-scripts --from-file=db_scripts/
+kubectl -n bonita apply -f postgresql.yaml
+```
+
+Test connection
+
+```
+kubectl -n bonita run psql-client --image postgres:16.4 --rm --tty -i --command -- /bin/bash
+```
+
+```
+export PGPASSWORD=testpassword
+psql -h postgres-db -p 5432 -U postgres postgres
+postgres=# show max_connections;
+ max_connections 
+-----------------
+ 100
+(1 ligne)
+
+postgres=# \list
+                                  List of databases
+   Name    |   Owner    | Encoding |  Collate   |   Ctype    |   Access privileges   
+-----------+------------+----------+------------+------------+-----------------------
+ bizdata   | bizuser    | UTF8     | en_US.utf8 | en_US.utf8 | 
+ bonita    | bonitauser | UTF8     | en_US.utf8 | en_US.utf8 | 
+ postgres  | postgres   | UTF8     | en_US.utf8 | en_US.utf8 | 
+ template0 | postgres   | UTF8     | en_US.utf8 | en_US.utf8 | =c/postgres          +
+           |            |          |            |            | postgres=CTc/postgres
+ template1 | postgres   | UTF8     | en_US.utf8 | en_US.utf8 | =c/postgres          +
+           |            |          |            |            | postgres=CTc/postgres
+(5 rows)
+```
+
+
+# Deploy Bonita
+
+Add Docker registry credentials
+```
+DOCKER_SEVER=bonitasoft.jfrog.io
+DOCKER_USERNAME=...
+DOCKER_TOKEN=...
+kubectl create secret docker-registry imagepullsecret --docker-server="${DOCKER_SEVER}" --docker-username="${DOCKER_USERNAME}" --docker-password="${DOCKER_TOKEN}" -n bonita
+```
+
+Add bonita license
+```
+cp BonitaSubscription-10.2-Test-20250303-20250830.lic license.lic
+kubectl -n bonita create secret generic bonita-license --from-file=license.lic
+```
+
+Deploy Bonita using helm
+```
+helm dependency build helm/bonita-custom
+
+helm upgrade --install \
+  bonita-test \
+  -n bonita \
+  helm/bonita-custom \
+  -f helm/values-test.yaml
+```
+
+Test connection
+```
+sudo -E kubectl --namespace bonita port-forward service/bonita-test-ui-proxy 80:80
+```
+
+Open http://127.0.0.1 in your browser and use admin / myAdminSecret credentials.
+
+# Scale up Bonita
+
+Once bonita finished its startup
+```
+kubectl -n bonita logs --tail=-1 --selector app=runtime | grep "Server startup in" | jq .message
+"Server startup in [22712] milliseconds"
+```
+
+```
+kubectl -n bonita get deployment --selector app=runtime
+NAME                     READY   UP-TO-DATE   AVAILABLE   AGE
+bonita-test-engine       1/1     1            1           11m
+```
+
+You can scale up
+```
+kubectl -n bonita scale --current-replicas=1 --replicas=2 deployment/bonita-test-engine
+```
+
+```
+kubectl -n bonita get deployment --selector app=runtime
+NAME          READY   UP-TO-DATE   AVAILABLE   AGE
+bonita-test-engine   2/2     2            2           16m
+```
+
+In case of success you will have this kind of message
+```
+kubectl -n bonita logs --tail=-1 --selector app=runtime | grep Members | jq .message
+"[10.244.0.62]:5701 [bonita-test-hazelcast] [5.4.0] \n\nMembers {size:1, ver:1} [\n\tMember [10.244.0.62]:5701 - 28367a58-bbc7-4c4f-8ca3-ef4372cab435 this\n]\n"
+"[10.244.0.62]:5701 [bonita-test-hazelcast] [5.4.0] \n\nMembers {size:2, ver:2} [\n\tMember [10.244.0.62]:5701 - 28367a58-bbc7-4c4f-8ca3-ef4372cab435 this\n\tMember [10.244.0.65]:5701 - ffa1837a-af46-4ce4-a7a6-4f2a513f2415\n]\n"
+"[10.244.0.65]:5701 [bonita-test-hazelcast] [5.4.0] \n\nMembers {size:2, ver:2} [\n\tMember [10.244.0.62]:5701 - 28367a58-bbc7-4c4f-8ca3-ef4372cab435\n\tMember [10.244.0.65]:5701 - ffa1837a-af46-4ce4-a7a6-4f2a513f2415 this\n]\n"
+```
+
+# Clean test
+
+```
+kubectl delete ns bonita
+```

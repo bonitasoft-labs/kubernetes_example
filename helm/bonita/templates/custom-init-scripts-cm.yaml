@@ -1,0 +1,14 @@
+{{- if .Values.customInitScripts }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "bonita.fullname" . }}-custom-init-scripts
+  labels:
+    {{- include "bonita.labels" . | nindent 4 }}
+  namespace: {{ .Release.Namespace | quote }}
+data:
+{{- range $key, $value := .Values.customInitScripts }}
+  {{ $key }}: |
+    {{- $value | nindent 4 }}
+{{- end }}
+{{- end }}

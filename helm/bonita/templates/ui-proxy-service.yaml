@@ -1,0 +1,19 @@
+{{- if and .Values.uib.enabled .Values.uib.proxy.service.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "bonita.fullname" . }}-ui-proxy
+  labels:
+    {{- include "bonita.labels" . | nindent 4 }}
+  namespace: {{ .Release.Namespace | quote }}
+spec:
+  type: {{ .Values.uib.proxy.service.type }}
+  ports:
+    - port: {{ .Values.uib.proxy.service.port }}
+      targetPort: 80
+      protocol: TCP
+      name: bonita
+  selector:
+    {{- include "bonita.selectorLabels" . | nindent 4 }}
+    app: ui-builder-nginx
+{{- end }}

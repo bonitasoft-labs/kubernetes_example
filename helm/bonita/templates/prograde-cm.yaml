@@ -1,0 +1,12 @@
+{{- if .Values.progradePolicy }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "bonita.fullname" . }}-prograde
+  labels:
+    {{- include "bonita.labels" . | nindent 4 }}
+  namespace: {{ .Release.Namespace | quote }}
+data:
+  prograde.policy: |
+{{ indent 4 .Values.progradePolicy }}
+{{- end }}

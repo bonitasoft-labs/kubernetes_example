@@ -1,0 +1,52 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "bonita-custom.fullname" . }}-setup-properties
+  labels:
+    {{- include "bonita-custom.labels" . | nindent 4 }}
+  namespace: {{ .Release.Namespace | quote }}
+  annotations:
+    # This is what defines this resource as a hook. Without this line, the
+    # job is considered part of the release.
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    metadata:
+      annotations:
+    spec:
+      restartPolicy: OnFailure
+      imagePullSecrets:
+        {{- include "bonita.tplvalues" (dict "value" .Values.bonita.image.pullSecrets "context" $) | nindent 8 }}
+      containers:
+      - name: setup-properties
+        image: "{{ .Values.bonita.image.repository }}:{{ .Values.bonita.image.tag }}"
+        imagePullPolicy: {{ .Values.bonita.image.pullPolicy }}
+        env:
+        - name: "CLUSTER_MODE"
+          value: {{ .Values.clusterMode | ternary "true" "false" | quote }}
+        - name: "KUBERNETES_NAME"
+          value: "{{ include "bonita-custom.fullname" . }}-hazelcast"
+        - name: "KUBERNETES_NAMESPACE"
+          value: "{{ .Release.Namespace }}"
+        envFrom:
+        - secretRef:
+            name: {{ include "bonita-custom.fullname" . }}-setup-env-vars
+        volumeMounts:
+        - name: configure-properties
+          mountPath: /opt/init.d
+        - name: bonita-license
+          subPath: license.lic
+          mountPath: /opt/bonita_lic/license.lic
+        command: ['/bin/sh', '-c', '/opt/init.d/k8s-support.sh']
+        resources:
+          {{- toYaml .Values.initJobResources | nindent 10 }}
+      volumes:
+      - name: configure-properties
+        configMap:
+          name: {{ include "bonita-custom.fullname" . }}-configure-properties
+          defaultMode: 0700
+      - name: bonita-license
+        secret:
+          secretName: bonita-license

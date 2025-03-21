@@ -1,0 +1,154 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "bonita.fullname" . }}-engine
+  labels:
+    {{- include "bonita.labels" . | nindent 4 }}
+    app: runtime
+  namespace: {{ .Release.Namespace | quote }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "bonita.selectorLabels" . | nindent 6 }}
+      app: runtime
+  template:
+    metadata:
+      {{- if .Values.podAnnotations }}
+      annotations:
+        {{- include "bonita.tplvalues" (dict "value" .Values.podAnnotations "context" $) | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "bonita.selectorLabels" . | nindent 8 }}
+        app: runtime
+    spec:
+      {{- if .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- include "bonita.tplvalues" (dict "value" .Values.image.pullSecrets "context" $) | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "bonita.serviceAccountName" . }}
+      {{- if .Values.podSecurityContext }}
+      securityContext:
+        {{- include "bonita.tplvalues" (dict "value" .Values.podSecurityContext "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.podInitContainers }}
+      initContainers:
+        {{- include "bonita.tplvalues" (dict "value" .Values.podInitContainers "context" $) | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: bonita
+              containerPort: 8080
+              protocol: TCP
+            - name: hazelcast
+              containerPort: 5701
+              protocol: TCP
+          {{- if and .Values.credentials.monitoring.username .Values.credentials.monitoring.password }}
+          startupProbe:
+            httpGet:
+              path: /bonita/healthz
+              port: 8080
+              httpHeaders:
+                - name: Authorization
+                  value: Basic {{ printf "%s:%s" .Values.credentials.monitoring.username .Values.credentials.monitoring.password | b64enc }}
+                - name: User-Agent
+                  value: BonitaHealthCheck/1.0
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            failureThreshold: 20
+          livenessProbe:
+            httpGet:
+              path: /bonita/healthz
+              port: 8080
+              httpHeaders:
+                - name: Authorization
+                  value: Basic {{ printf "%s:%s" .Values.credentials.monitoring.username .Values.credentials.monitoring.password | b64enc }}
+                - name: User-Agent
+                  value: BonitaHealthCheck/1.0
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 10
+          {{- end }}
+          {{- if .Values.resources }}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
+          envFrom:
+          - secretRef:
+              name: {{ include "bonita.fullname" . }}-env-vars
+          - configMapRef:
+              name: {{ include "bonita.fullname" . }}-env-vars
+          {{- if or .Values.podVolumeMounts .Values.licenseSecretName .Values.progradePolicy .Values.customInitScripts .Values.customConfigScripts }}
+          volumeMounts:
+          {{- if .Values.podVolumeMounts }}
+          {{- include "bonita.tplvalues" (dict "value" .Values.podVolumeMounts "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.licenseSecretName }}
+            - name: bonita-license
+              subPath: license.lic
+              mountPath: /opt/bonita_lic/license.lic
+          {{- end }}
+          {{- if .Values.progradePolicy }}
+            - name: prograde-policy
+              mountPath: /opt/bonita/conf/prograde/prograde.policy
+              subPath: prograde.policy
+          {{- end }}
+          {{- if .Values.customInitScripts }}
+          {{- range $key, $value := .Values.customInitScripts }}
+            - name: custom-init-scripts
+              mountPath: /opt/custom-init.d/{{ $key }}
+              subPath: {{ $key }}
+          {{- end }}
+          {{- end }}
+          {{- if .Values.customConfigScripts }}
+          {{- range $key, $value := .Values.customConfigScripts }}
+            - name: custom-config-scripts
+              mountPath: /opt/custom-config.d/{{ $key }}
+              subPath: {{ $key }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+      {{- if or .Values.podVolumes .Values.licenseSecretName .Values.progradePolicy .Values.customInitScripts .Values.customConfigScripts }}
+      volumes:
+      {{- if .Values.podVolumes }}
+      {{- include "bonita.tplvalues" (dict "value" .Values.podVolumes "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.licenseSecretName }}
+        - name: bonita-license
+          secret:
+            secretName: {{ include "bonita.tplvalues" (dict "value" .Values.licenseSecretName "context" $) }}
+      {{- end }}
+      {{- if .Values.progradePolicy }}
+        - name: prograde-policy
+          configMap:
+            name:  {{ include "bonita.fullname" . }}-prograde
+      {{- end }}
+      {{- if .Values.customInitScripts }}
+        - name: custom-init-scripts
+          configMap:
+            name: {{ include "bonita.fullname" . }}-custom-init-scripts
+      {{- end }}
+      {{- if .Values.customConfigScripts }}
+        - name: custom-config-scripts
+          configMap:
+            name: {{ include "bonita.fullname" . }}-custom-config-scripts
+      {{- end }}
+      {{- end }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+        {{- include "bonita.tplvalues" (dict "value" .Values.nodeSelector "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.affinity }}
+      affinity:
+        {{- include "bonita.tplvalues" (dict "value" .Values.affinity "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.tolerations }}
+      tolerations:
+        {{- include "bonita.tplvalues" (dict "value" .Values.tolerations "context" $) | nindent 8 }}
+      {{- end }}

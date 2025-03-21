@@ -1,0 +1,121 @@
+
+{{- if .Values.uib.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "bonita.fullname" . }}-ui-proxy
+  labels:
+    {{- include "bonita.labels" . | nindent 4 }}
+    app: ui-builder-nginx
+  namespace: {{ .Release.Namespace | quote }}
+spec:
+  {{- if not .Values.uib.proxy.autoscaling.enabled }}
+  replicas: {{ .Values.uib.proxy.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "bonita.selectorLabels" . | nindent 6 }}
+      app: ui-builder-nginx
+  template:
+    metadata:
+      {{- if .Values.uib.proxy.podAnnotations }}
+      annotations:
+        {{- include "bonita.tplvalues" (dict "value" .Values.uib.proxy.podAnnotations "context" $) | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "bonita.selectorLabels" . | nindent 8 }}
+        app: ui-builder-nginx
+    spec:
+      {{- if .Values.uib.proxy.image.pullSecrets }}
+      imagePullSecrets:
+        {{- include "bonita.tplvalues" (dict "value" .Values.uib.proxy.image.pullSecrets "context" $) | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "bonita.serviceAccountName" . }}
+      {{- if .Values.uib.proxy.podSecurityContext }}
+      securityContext:
+        {{- include "bonita.tplvalues" (dict "value" .Values.uib.proxy.podSecurityContext "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.uib.proxy.podInitContainers }}
+      initContainers:
+        {{- include "bonita.tplvalues" (dict "value" .Values.uib.proxy.podInitContainers "context" $) | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}-ui-proxy
+          {{- if .Values.uib.proxy.podSecurityContext }}
+          securityContext:
+            {{- toYaml .Values.uib.proxy.containerSecurityContext | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.uib.proxy.image.repository }}:{{ .Values.uib.proxy.image.tag }}"
+          imagePullPolicy: {{ .Values.uib.proxy.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /nginx_status
+              port: 90
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          {{- if .Values.uib.proxy.resources }}
+          resources:
+            {{- toYaml .Values.uib.proxy.resources | nindent 12 }}
+          {{- end }}
+          env:
+          - name: BONITA_HOST
+            value: {{ printf "%s-engine" (include "bonita.fullname" .) | quote }}
+          - name: BONITA_PORT
+            value: {{ .Values.services.bonita.port | quote }}
+          - name: UIB_HOST
+            value: {{ printf "%s-ui-builder" (include "bonita.fullname" .) | quote }}
+          - name: UIB_PORT
+            value: {{ .Values.uib.builder.service.port | quote }}
+          - name: NGINX_ACCESS_LOG_ALL
+            value: {{ .Values.uib.proxy.accessLogAll | quote }}
+          - name: NGINX_ERROR_LOG_LEVEL
+            value: "error"
+          {{- if or .Values.uib.proxy.podVolumeMounts .Values.uib.proxy.configFileTemplate }}
+          volumeMounts:
+          {{- if .Values.uib.proxy.podVolumeMounts }}
+          {{- include "bonita.tplvalues" (dict "value" .Values.uib.proxy.podVolumeMounts "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.uib.proxy.configFileTemplate }}
+            - name: config
+              mountPath: /etc/nginx/templates/nginx.conf.template
+              subPath: nginx.conf.template
+          {{- end }}
+          {{- if .Values.uib.proxy.customErrorPages.enabled }}
+            - name: error-pages
+              mountPath: /usr/share/nginx/html
+          {{- end }}
+          {{- end }}
+      {{- if or .Values.uib.proxy.podVolumes .Values.uib.proxy.configFileTemplate}}
+      volumes:
+      {{- if .Values.uib.proxy.podVolumes }}
+      {{- include "bonita.tplvalues" (dict "value" .Values.uib.proxy.podVolumes "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.uib.proxy.configFileTemplate }}
+          - name: config
+            configMap:
+              name: {{ include "bonita.fullname" . }}-nginx-config
+      {{- end }}
+      {{- if .Values.uib.proxy.customErrorPages.enabled }}
+          - name: error-pages
+            configMap:
+              name: {{ include "bonita.fullname" . }}-ui-proxy-errorpages
+      {{- end }}
+      {{- end }}
+      {{- if .Values.uib.proxy.nodeSelector }}
+      nodeSelector:
+        {{- include "bonita.tplvalues" (dict "value" .Values.uib.proxy.nodeSelector "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.uib.proxy.affinity }}
+      affinity:
+        {{- include "bonita.tplvalues" (dict "value" .Values.uib.proxy.affinity "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.uib.proxy.tolerations }}
+      tolerations:
+        {{- include "bonita.tplvalues" (dict "value" .Values.uib.proxy.tolerations "context" $) | nindent 8 }}
+      {{- end }}
+{{- end }}

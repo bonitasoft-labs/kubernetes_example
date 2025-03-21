@@ -1,0 +1,40 @@
+{{- if .Values.services.bonita.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "bonita.fullname" . }}-engine
+  labels:
+    {{- include "bonita.labels" . | nindent 4 }}
+  namespace: {{ .Release.Namespace | quote }}
+spec:
+  type: {{ .Values.services.bonita.type }}
+  ports:
+    - port: {{ .Values.services.bonita.port }}
+      targetPort: 8080
+      protocol: TCP
+      name: bonita
+  selector:
+    {{- include "bonita.selectorLabels" . | nindent 4 }}
+    app: runtime
+{{- end }}
+{{- if .Values.services.hazelcast.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "bonita.fullname" . }}-hazelcast
+  labels:
+    {{- include "bonita.labels" . | nindent 4 }}
+    app: runtime
+  namespace: {{ .Release.Namespace | quote }}
+spec:
+  type: {{ .Values.services.hazelcast.type }}
+  ports:
+    - port: {{ .Values.services.hazelcast.port }}
+      targetPort: 5701
+      protocol: TCP
+      name: hazelcast
+  selector:
+    {{- include "bonita.selectorLabels" . | nindent 4 }}
+    app: runtime
+{{- end }}

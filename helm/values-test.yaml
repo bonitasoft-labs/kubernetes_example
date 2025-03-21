@@ -1,0 +1,73 @@
+bonita:
+    licenseSecretName: bonita-license
+    timezone: Europe/Paris
+    clusterMode: true
+    remoteIpEnabled: true
+    datasources:
+        bonita:
+            host: postgres-db
+            username: bonitauser
+            password: myDbSecret
+            name: bonita
+        bdm:
+            host: postgres-db
+            username: bizuser
+            password: myBdmSecret
+            name: bizdata
+    credentials:
+        tenant:
+            username: admin
+            password: myAdminSecret
+        platform:
+            username: pflogin
+            password: myPfSecret
+        monitoring:
+            username: monitoring
+            password: myMonitoringSecret
+    serviceAccount:
+        create: true
+        name: bonita-test-sa
+    image:
+        tag: 10.2.1
+        pullSecrets:
+        - name: imagepullsecret
+    resources:
+        limits:
+            cpu: 2
+            memory: 2Gi
+        requests:
+            cpu: 2
+            memory: 2Gi
+    uib:
+        enabled: true
+        proxy:
+            service:
+                enabled: true
+            image:
+                tag: 1.2.1
+                pullSecrets:
+                - name: imagepullsecret
+            resources:
+                limits:
+                    cpu: 500m
+                    memory: 256Mi
+                requests:
+                    cpu: 500m
+                    memory: 256Mi
+        builder:
+            devMode: false
+            service:
+                enabled: true
+            image:
+                repository: bonitasoft.jfrog.io/docker/bonita-ui-builder
+                tag: 1.2.1
+                pullSecrets:
+                - name: imagepullsecret
+            resources:
+                limits:
+                    cpu: 500m
+                    memory: 1Gi
+                requests:
+                    cpu: 500m
+                    memory: 512Mi
+    customInitScripts:
