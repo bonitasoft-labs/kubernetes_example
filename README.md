@@ -15,7 +15,7 @@ This repository provides a step-by-step guide to deploy Bonitasoft (version ≥1
 $ mkdir myTmp
 $ cd myTmp
 $ curl -LO https://storage.googleapis.com/minikube/releases/v1.34.0/minikube-linux-amd64
-$ sudo install minikube-linux-amd64 /usr/local/bin/minikube && rm minikube-linux-amd64
+$ sudo install minikube-linux-amd64 /usr/local/bin/minikube
 ```
 
 ```bash
@@ -43,7 +43,7 @@ version.BuildInfo{Version:"v3.17.1", GitCommit:"980d8ac1939e39138101364400756af2
 ```
 
 ## Install kubectl
-> Based on [official documuentation](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux).
+> Based on [official documentation](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux).
 
 ```bash
 #cd myTmp
