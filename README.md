@@ -156,7 +156,7 @@ $ helm upgrade --install \
   -f helm/values-test.yaml
 ```
 
-### 4. Test connection
+## 4. Test connection
 Make sure the port `80` is available on your localhost.
 
 ```bash
