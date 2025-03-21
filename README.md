@@ -157,7 +157,7 @@ $ helm upgrade --install \
 ```
 
 ### 4. Test connection
-Make sure the port `80` is available on your local, or change it if need it.
+Make sure the port `80` is available on your localhost.
 
 ```bash
 $ sudo -E kubectl --namespace bonita port-forward service/bonita-test-ui-proxy 80:80
