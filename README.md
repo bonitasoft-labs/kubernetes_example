@@ -2,14 +2,14 @@
 
 This repository provides a step-by-step guide to deploy Bonitasoft (version ≥10.2) on Kubernetes (tested with Kubernetes v1.30.9 and kubectl v1.30.9).
 
-# Pre-requirements
+## Pre-requirements
 
 * minikube (required only for local test)
 * kubectl (at least v1.29.3)
 * helm v3
 * k9s v0.40.10 (recommended)
 
-## Install Minikube
+### Install Minikube
 
 ```bash
 $ mkdir myTmp
@@ -28,7 +28,7 @@ commit: 210b148df93a80eb872ecbeb7e35281b3c582c61
 minikube start --kubernetes-version 1.30.9
 ```
 
-## Install Helm
+### Install Helm
 
 ```bash
 #cd myTmp
@@ -42,7 +42,7 @@ $ helm version
 version.BuildInfo{Version:"v3.17.1", GitCommit:"980d8ac1939e39138101364400756af2bdee1da5", GitTreeState:"clean", GoVersion:"go1.23.5"}
 ```
 
-## Install kubectl
+### Install kubectl
 > Based on [official documentation](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux).
 
 ```bash
@@ -68,7 +68,7 @@ clientVersion:
 kustomizeVersion: v5.0.4-0.20230601165947-6ce0bf390ce3
 ```
 
-## k9s
+### k9s
 
 ```bash
 #cd myTmp
@@ -82,22 +82,22 @@ $ sudo apt install ./k9s_linux_amd64.deb
 $ rm -Rf ~/myTmp
 ```
 
-# Prepare deployment
+## Prepare deployment
 
-## Create test namespace
+### Create test namespace
 
 ```bash
 kubectl create ns bonita
 ```
 
-## Deploy PostgreSQL
+### Deploy PostgreSQL
 
 ```bash
 kubectl -n bonita create configmap db-scripts --from-file=db_scripts/
 kubectl -n bonita apply -f postgresql.yaml
 ```
 
-### Test connection
+#### Test connection
 
 ```bash
 kubectl -n bonita run psql-client --image postgres:16.4 --rm --tty -i --command -- /bin/bash
@@ -127,9 +127,9 @@ postgres=# \list
 ```
 
 
-# Deploy Bonita
+## Deploy Bonita
 
-## 1. Add Docker registry credentials
+### 1. Add Docker registry credentials
 
 ```bash
 $ DOCKER_SEVER=bonitasoft.jfrog.io
@@ -138,14 +138,14 @@ $ DOCKER_TOKEN=myPassword
 $ kubectl create secret docker-registry imagepullsecret --docker-server="${DOCKER_SEVER}" --docker-username="${DOCKER_USERNAME}" --docker-password="${DOCKER_TOKEN}" -n bonita
 ```
 
-## 2. Add bonita license
+### 2. Add bonita license
 
 ```bash
 $ cp BonitaSubscription-10.2-Test-20250303-20250830.lic license.lic
 $ kubectl -n bonita create secret generic bonita-license --from-file=license.lic
 ```
 
-## 3. Deploy Bonita using helm
+### 3. Deploy Bonita using helm
 ```bash
 $ helm dependency build helm/bonita-custom
 
@@ -156,7 +156,7 @@ $ helm upgrade --install \
   -f helm/values-test.yaml
 ```
 
-## 4. Test connection
+### 4. Test connection
 Make sure the port `80` is available on your localhost.
 
 ```bash
@@ -165,7 +165,7 @@ $ sudo -E kubectl --namespace bonita port-forward service/bonita-test-ui-proxy 8
 
 Open http://127.0.0.1 in your browser and use admin / myAdminSecret credentials.
 
-# Scale up Bonita
+## Scale up Bonita
 
 Once bonita finished its startup
 
@@ -201,7 +201,7 @@ $ kubectl -n bonita logs --tail=-1 --selector app=runtime | grep Members | jq .m
 "[10.244.0.65]:5701 [bonita-test-hazelcast] [5.4.0] \n\nMembers {size:2, ver:2} [\n\tMember [10.244.0.62]:5701 - 28367a58-bbc7-4c4f-8ca3-ef4372cab435\n\tMember [10.244.0.65]:5701 - ffa1837a-af46-4ce4-a7a6-4f2a513f2415 this\n]\n"
 ```
 
-# Clean test
+## Clean test
 
 ```bash
 $ kubectl delete ns bonita
