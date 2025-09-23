@@ -105,11 +105,11 @@ bonita:
         - name: '{{ include "bonita-custom.fullname" . }}-imagepullsecret'
       resources:
         limits:
-          cpu: 500m
-          memory: 1Gi
+          cpu: 2
+          memory: 4Gi
         requests:
-          cpu: 500m
-          memory: 512Mi
+          cpu: 2
+          memory: 4Gi
 
     proxy:
       nameOverride: "proxy"
@@ -118,9 +118,9 @@ bonita:
         - name: '{{ include "bonita-custom.fullname" . }}-imagepullsecret'
       resources:
         limits:
-          cpu: 500m
-          memory: 256Mi
+          cpu: 1
+          memory: 1Gi
         requests:
-          cpu: 500m
-          memory: 256Mi
+          cpu: 1
+          memory: 1Gi
       podAnnotations:

@@ -28,7 +28,7 @@ bonita:
         create: true
         name: bonita-test-sa
     image:
-        tag: 10.2.1
+        tag: 10.2.3
         pullSecrets:
         - name: imagepullsecret
     resources:
@@ -44,13 +44,13 @@ bonita:
             service:
                 enabled: true
             image:
-                tag: 1.2.1
+                tag: 1.3.0
                 pullSecrets:
                 - name: imagepullsecret
             resources:
                 limits:
-                    cpu: 500m
-                    memory: 256Mi
+                    cpu: 1
+                    memory: 1Gi
                 requests:
                     cpu: 500m
                     memory: 256Mi
@@ -60,13 +60,13 @@ bonita:
                 enabled: true
             image:
                 repository: bonitasoft.jfrog.io/docker/bonita-ui-builder
-                tag: 1.2.1
+                tag: 1.3.0
                 pullSecrets:
                 - name: imagepullsecret
             resources:
                 limits:
-                    cpu: 500m
-                    memory: 1Gi
+                    cpu: 2
+                    memory: 4Gi
                 requests:
                     cpu: 500m
                     memory: 512Mi
